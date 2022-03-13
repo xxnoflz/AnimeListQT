@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/AnimeListQT">
+        <file>WindowIcon.png</file>
+    </qresource>
+</RCC>
