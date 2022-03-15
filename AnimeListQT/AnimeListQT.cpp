@@ -9,9 +9,8 @@ AnimeListQT::AnimeListQT(QWidget *parent)
 
 void AnimeListQT::setup() {
     setWindowIcon(QIcon(":/AnimeListQT/WindowIcon.png"));
-    QSettings settings{ qApp->applicationDirPath() + "/config.ini", QSettings::IniFormat };
-    m_path = settings.value("path").toString();
-    action_open(true);
+
+    connect(this, &AnimeListQT::items_changed, this, &AnimeListQT::change_handler);
 
     connect(ui.add_button, &QPushButton::pressed, this, &AnimeListQT::add_item);
     connect(ui.delete_button, &QPushButton::pressed, this, &AnimeListQT::delete_item);
@@ -27,7 +26,23 @@ void AnimeListQT::setup() {
     connect(ui.actionAbout, &QAction::triggered, this, &AnimeListQT::action_about);
     connect(ui.actionQuit, &QAction::triggered, qApp, &QApplication::quit);
     ui.actionQuit->setShortcut(QKeySequence(tr("Alt+F4")));
+
+    QSettings settings{ qApp->applicationDirPath() + "/config.ini", QSettings::IniFormat };
+    m_path = settings.value("path").toString();
+    action_open(true);
 } // Setting everything up
+
+void AnimeListQT::change_handler() {
+    if (ui.titles_widget->topLevelItemCount() == 0) {
+        ui.delete_button->setEnabled(false);
+        ui.titles_widget->setSortingEnabled(false);
+        ui.edit_button->setVisible(false);
+    }
+    else if (ui.titles_widget->topLevelItemCount() != 0) {
+        ui.titles_widget->setSortingEnabled(true);
+        ui.titles_widget->sortByColumn(Date, Qt::AscendingOrder);
+    }
+}
 
 void AnimeListQT::add_item() {
     askboxQT dialog{ this };
@@ -36,17 +51,13 @@ void AnimeListQT::add_item() {
     if (!dialog.result())
         return;
 
-    if (ui.titles_widget->topLevelItemCount() == 0) {
-        ui.titles_widget->setSortingEnabled(true);
-        ui.titles_widget->sortByColumn(Date, Qt::DescendingOrder);
-    }
-
     QTreeWidgetItem* add{new QTreeWidgetItem};
     add->setText(Title, dialog.get_title());
     add->setText(Status, dialog.get_status());
     add->setText(Date, QDateTime::currentDateTime().toString("hh:mm, d MMMM yyyy"));
 
     ui.titles_widget->insertTopLevelItem(0,add);
+    emit items_changed();
 } // Get the item from dialog and add it
 
 void AnimeListQT::enable_deletion(QTreeWidgetItem* item) {
@@ -69,12 +80,8 @@ void AnimeListQT::delete_item() {
         return;
 
     delete m_item;
-    if (ui.titles_widget->topLevelItemCount() == 0) {
-        ui.delete_button->setEnabled(false);
-        ui.titles_widget->setSortingEnabled(false);
-        ui.edit_button->setVisible(false);
-    }
     m_item = ui.titles_widget->topLevelItem( Title );
+    emit items_changed();
 } // Confirm the deletion process and do it
 
 void AnimeListQT::edit_item() {
@@ -112,6 +119,7 @@ void AnimeListQT::action_save() {
         return;
 
     save.write(QJsonDocument(save_object).toJson());
+
 } // Save the items to the json file
 
 void AnimeListQT::action_open(bool Saved_Settings) {
@@ -145,6 +153,7 @@ void AnimeListQT::action_open(bool Saved_Settings) {
     }
     ui.titles_widget->clear();
     ui.titles_widget->addTopLevelItems(items);
+    emit items_changed();
 
     QSettings settings{qApp->applicationDirPath() + "/config.ini", QSettings::IniFormat};
     settings.setValue("path", m_path);

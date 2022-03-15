@@ -26,6 +26,8 @@ public:
         Status,
         Date
     };
+signals:
+    void items_changed();
 private slots:
     void add_item();
     void delete_item();
@@ -36,6 +38,8 @@ private slots:
     void action_save();
     void action_open(bool);
     void action_about();
+
+    void change_handler();
 private:
     Ui::AnimeListQTClass ui;
     const QString version{ "v.0.01" };
