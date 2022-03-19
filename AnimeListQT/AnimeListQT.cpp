@@ -1,7 +1,7 @@
 #include "AnimeListQT.h"
 
 AnimeListQT::AnimeListQT(QWidget *parent)
-    : QMainWindow(parent), m_path("")
+    : QMainWindow(parent)
 {
     ui.setupUi(this);
     setup();
@@ -14,10 +14,7 @@ void AnimeListQT::setup() {
 
     connect(ui.add_button, &QPushButton::pressed, this, &AnimeListQT::add_item);
     connect(ui.delete_button, &QPushButton::pressed, this, &AnimeListQT::delete_item);
-    connect(ui.edit_button, &QPushButton::pressed, this, &AnimeListQT::edit_item);
-    connect(ui.titles_widget, &QTreeWidget::itemClicked, this, &AnimeListQT::enable_deletion);
-
-    ui.edit_button->setVisible(false);
+    connect(ui.titles_widget, &QTableWidget::cellClicked, this, &AnimeListQT::enable_deletion);
 
     connect(ui.actionSave, &QAction::triggered, this, &AnimeListQT::action_save);
     ui.actionSave->setShortcut(QKeySequence(tr("Ctrl+S")));
@@ -32,37 +29,33 @@ void AnimeListQT::setup() {
     action_open(true);
 } // Setting everything up
 
-void AnimeListQT::change_handler() {
-    if (ui.titles_widget->topLevelItemCount() == 0) {
-        ui.delete_button->setEnabled(false);
-        ui.titles_widget->setSortingEnabled(false);
-        ui.edit_button->setVisible(false);
-    }
-    else if (ui.titles_widget->topLevelItemCount() != 0) {
-        ui.titles_widget->setSortingEnabled(true);
-        ui.titles_widget->sortByColumn(Date, Qt::AscendingOrder);
+void AnimeListQT::change_checker(int row, int column) {
+    if (column == Title || column == Status) {
+        ui.titles_widget->item(row, Date)->setText(QDateTime::currentDateTime().toString("hh:mm, d MMMM yyyy"));
     }
 }
 
+void AnimeListQT::change_handler() {
+    if (ui.titles_widget->rowCount() == 0) {
+        ui.delete_button->setEnabled(false);
+        ui.titles_widget->setSortingEnabled(false);
+    }
+    else if (ui.titles_widget->rowCount() != 0) {
+        ui.titles_widget->setSortingEnabled(true);
+        ui.titles_widget->sortByColumn(Title, Qt::AscendingOrder);
+    }
+    connect(ui.titles_widget, &QTableWidget::cellChanged, this, &AnimeListQT::change_checker);
+}
+
 void AnimeListQT::add_item() {
-    askboxQT dialog{ this };
-    dialog.exec();
-
-    if (!dialog.result())
-        return;
-
-    QTreeWidgetItem* add{new QTreeWidgetItem};
-    add->setText(Title, dialog.get_title());
-    add->setText(Status, dialog.get_status());
-    add->setText(Date, QDateTime::currentDateTime().toString("hh:mm, d MMMM yyyy"));
-
-    ui.titles_widget->insertTopLevelItem(0,add);
+    ui.titles_widget->insertRow(0);
+    auto model{ ui.titles_widget->model() };
+    model->setData(ui.titles_widget->model()->index(0, Date), QDateTime::currentDateTime().toString("hh:mm, d MMMM yyyy"));
     emit items_changed();
 } // Get the item from dialog and add it
 
-void AnimeListQT::enable_deletion(QTreeWidgetItem* item) {
-    m_item = item;
-    ui.edit_button->setVisible(true);
+void AnimeListQT::enable_deletion(int row) {
+    m_row = row;
     ui.delete_button->setEnabled(true);
 } // If the selection is made, enable deletion
 
@@ -79,37 +72,19 @@ void AnimeListQT::delete_item() {
     if (QMessageBox::Cancel == answer)
         return;
 
-    delete m_item;
-    m_item = ui.titles_widget->topLevelItem( Title );
+    ui.titles_widget->removeRow(m_row);
+    m_row = 0;
     emit items_changed();
 } // Confirm the deletion process and do it
 
-void AnimeListQT::edit_item() {
-    QTreeWidgetItem* edit{ ui.titles_widget->currentItem()};
-    askboxQT dialog{ this , askboxQT::Edit, edit->text(Title), edit->text(Status)};
-    dialog.exec();
-
-    if (!dialog.result())
-        return;
-
-    edit->setText(Title, dialog.get_title());
-    edit->setText(Status, dialog.get_status());
-    edit->setText(Date, QDateTime::currentDateTime().toString("hh:mm, d MMMM yyyy"));
-} // Get the edited item data and edit it
-
 void AnimeListQT::action_save() {
-    QList<QTreeWidgetItem*> items;
-    for (QTreeWidgetItemIterator iter{ ui.titles_widget }; *iter; ++iter) {
-        items.append(*iter);
-    }
-
     QJsonObject save_object;
-    for (int it{}; it < items.size(); ++it) {
+    for (int iter_out{}; iter_out < ui.titles_widget->rowCount(); ++iter_out) {
         QJsonArray tmp;
-        for (int iter{ Status }; iter <= Date; ++iter) {
-            tmp.append(items[it]->text(iter));
+        for (int iter_in{ Status }; iter_in < ui.titles_widget->columnCount(); ++iter_in) {
+            tmp.append(ui.titles_widget->item(iter_out, iter_in)->text());
         }
-        save_object[items[it]->text(Title)] = tmp;
+        save_object[ui.titles_widget->item(iter_out, Title)->text()] = tmp;
     }
 
     if(m_path.isEmpty())
@@ -138,21 +113,20 @@ void AnimeListQT::action_open(bool Saved_Settings) {
     QByteArray read{open.readAll()};
     QJsonObject read_object{ QJsonDocument::fromJson(read).object() };
 
-    QList<QTreeWidgetItem*> items;
-    for (QJsonObject::iterator iterator{ read_object.begin() }; iterator != read_object.end(); ++iterator) {
-        QTreeWidgetItem* item_tmp{ new QTreeWidgetItem };
-        item_tmp->setText(Title, iterator.key());
-
+    int count{};
+    ui.titles_widget->setRowCount(0);
+    for (QJsonObject::iterator iterator{ read_object.begin() }; iterator != read_object.end(); ++iterator, ++count) {
+        ui.titles_widget->insertRow(count);
+        auto model{ ui.titles_widget->model() };
+        model->setData(ui.titles_widget->model()->index(count, Title), iterator.key());
+        
         QJsonValue value_tmp{ read_object.value(iterator.key()) };
         QJsonArray array_tmp{ value_tmp.toArray() };
 
-        item_tmp->setText(Status, array_tmp[Status - 1].toString());
-        item_tmp->setText(Date, array_tmp[Date - 1].toString());
-
-        items.append(item_tmp);
+        model->setData(ui.titles_widget->model()->index(count, Status), array_tmp[Status - 1].toString());
+        model->setData(ui.titles_widget->model()->index(count, Date), array_tmp[Date - 1].toString());
     }
-    ui.titles_widget->clear();
-    ui.titles_widget->addTopLevelItems(items);
+    
     emit items_changed();
 
     QSettings settings{qApp->applicationDirPath() + "/config.ini", QSettings::IniFormat};

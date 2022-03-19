@@ -9,9 +9,9 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QSettings>
+#include <QComboBox>
 
 #include "aboutQT.h"
-#include "askboxQT.h"
 #include "ui_AnimeListQT.h"
 
 class AnimeListQT : public QMainWindow
@@ -31,18 +31,18 @@ signals:
 private slots:
     void add_item();
     void delete_item();
-    void edit_item();
 
-    void enable_deletion(QTreeWidgetItem*);
+    void enable_deletion(int);
 
     void action_save();
     void action_open(bool);
     void action_about();
 
+    void change_checker(int,int);
     void change_handler();
 private:
     Ui::AnimeListQTClass ui;
     const QString version{ "v.0.01" };
     QString m_path;
-    QTreeWidgetItem* m_item;
+    int m_row;
 };

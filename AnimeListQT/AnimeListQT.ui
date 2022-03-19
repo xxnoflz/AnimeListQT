@@ -31,24 +31,6 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="edit_button">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Edit</string>
-        </property>
-        <property name="checkable">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="add_button">
         <property name="font">
          <font>
@@ -78,39 +60,26 @@
      </layout>
     </item>
     <item row="0" column="0">
-     <widget class="QTreeWidget" name="titles_widget">
+     <widget class="QTableWidget" name="titles_widget">
       <property name="font">
        <font>
         <pointsize>10</pointsize>
-        <bold>false</bold>
        </font>
       </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
-      <property name="indentation">
-       <number>0</number>
-      </property>
-      <property name="rootIsDecorated">
-       <bool>false</bool>
-      </property>
-      <property name="itemsExpandable">
+      <property name="showGrid">
        <bool>false</bool>
       </property>
       <property name="sortingEnabled">
        <bool>false</bool>
       </property>
-      <property name="expandsOnDoubleClick">
-       <bool>false</bool>
-      </property>
-      <attribute name="headerCascadingSectionResizes">
-       <bool>false</bool>
+      <attribute name="horizontalHeaderMinimumSectionSize">
+       <number>100</number>
       </attribute>
-      <attribute name="headerMinimumSectionSize">
+      <attribute name="horizontalHeaderDefaultSectionSize">
        <number>150</number>
-      </attribute>
-      <attribute name="headerDefaultSectionSize">
-       <number>200</number>
       </attribute>
       <column>
        <property name="text">

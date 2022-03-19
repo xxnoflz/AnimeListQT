@@ -91,12 +91,7 @@
     <QtMoc Include="AnimeListQT.h" />
     <ClCompile Include="aboutQT.cpp" />
     <ClCompile Include="AnimeListQT.cpp" />
-    <ClCompile Include="askboxQT.cpp" />
     <ClCompile Include="main.cpp" />
-    <QtUic Include="askboxQT.ui" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="askboxQT.h" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="aboutQT.h" />
